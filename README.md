@@ -2,7 +2,7 @@
 
 # Token Compression Middleware
 
-When middle-out compression is enabled, Token Compression Middleware ensures the prompt fits within the model’s context window by trimming or removing messages from the middle, based on your total token requirement (input + output).
+Token Compression Middleware is a middle-out compression that ensures the prompt fits within the model’s context window by trimming or removing messages from the middle, based on your total token requirement (input + output).
 
 This approach is useful when perfect recall isn’t necessary. It reduces prompt size by removing or shortening messages from the middle until everything fits within the model’s context window.
 
