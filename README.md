@@ -2,19 +2,6 @@
 
 # Token Compression Middleware
 
-```mermaid
-flowchart TD
-A[Start transformParams] --> B{Is prompt too long?}
-B -- No --> Z[Return prompt unchanged]
-B -- Yes --> C[Split into pinnedStart, middle, pinnedEnd]
-C --> D[Identify tool-call pairs to protect]
-D --> E[Remove unprotected messages from middle]
-E --> F[Filter pinnedEnd to valid tool-results]
-F --> G[Rebuild prompt]
-G --> H[Clean up unmatched tool-calls]
-H --> I[Return compressed prompt]
-```
-
 When middle-out compression is enabled, Token Compression Middleware ensures the prompt fits within the model’s context window by trimming or removing messages from the middle, based on your total token requirement (input + output).
 
 This approach is useful when perfect recall isn’t necessary. It reduces prompt size by removing or shortening messages from the middle until everything fits within the model’s context window.
@@ -87,4 +74,19 @@ const middleware = tokenBasedCompressionMiddleware({
     return count;
   },
 });
+```
+
+## How it works
+
+```mermaid
+flowchart TD
+A[Start transformParams] --> B{Is prompt too long?}
+B -- No --> Z[Return prompt unchanged]
+B -- Yes --> C[Split into pinnedStart, middle, pinnedEnd]
+C --> D[Identify tool-call pairs to protect]
+D --> E[Remove unprotected messages from middle]
+E --> F[Filter pinnedEnd to valid tool-results]
+F --> G[Rebuild prompt]
+G --> H[Clean up unmatched tool-calls]
+H --> I[Return compressed prompt]
 ```
