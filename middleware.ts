@@ -51,7 +51,13 @@ export const tokenBasedCompressionMiddleware = (
           messages.length - pinnedEndCount
         );
 
-        const protectedIndexes = groupToolCallPairs(middle);
+        const fullMessages = [...pinnedStart, ...middle, ...pinnedEnd];
+        const protectedIndexes = new Set(
+          [...groupToolCallPairs(fullMessages)].map(
+            (idx) => idx - pinnedStartCount
+          )
+        );
+
         const compressedMiddle = [...middle];
 
         while (

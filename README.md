@@ -2,6 +2,29 @@
 
 # Token Compression Middleware
 
+````mermaid
+flowchart TD
+    A[Start transformParams] --> B{type is generate/stream?}
+    B -- No --> Z[Return params unchanged]
+    B -- Yes --> C[Check if params.prompt is an array]
+    C -- No --> Z
+    C -- Yes --> D[Count total token usage]
+
+    D --> E{Tokens > maxInputTokens?}
+    E -- No --> Z
+    E -- Yes --> F[Split prompt into pinnedStart / middle / pinnedEnd]
+    F --> G[Compute protectedIndexes from tool-call/result pairs]
+
+    G --> H[Iteratively remove messages from middle]
+    H --> I[Ensure tool-call IDs in pinnedStart/middle are tracked]
+    I --> J[Filter pinnedEnd to match preserved toolCallIds]
+
+    J --> K[Rebuild finalPrompt with start + compressedMiddle + end]
+    K --> L[Track pending toolCallIds]
+    L --> M[Remove dangling tool-calls without result]
+
+    M --> N[Return transformed prompt in params]``
+
 When middle-out compression is enabled, Token Compression Middleware ensures the prompt fits within the model’s context window by trimming or removing messages from the middle, based on your total token requirement (input + output).
 
 This approach is useful when perfect recall isn’t necessary. It reduces prompt size by removing or shortening messages from the middle until everything fits within the model’s context window.
@@ -29,7 +52,7 @@ npm install token-compression-middleware
 
 # yarn
 yarn add token-compression-middleware
-```
+````
 
 ## Usage
 
