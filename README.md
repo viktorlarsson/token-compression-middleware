@@ -1,4 +1,4 @@
-# AI SDK Token Compression Middleware
+# Token Compression Middleware
 
 When middle-out compression is enabled, Token Compression Middleware ensures the prompt fits within the model’s context window by trimming or removing messages from the middle, based on your total token requirement (input + output).
 
@@ -17,16 +17,16 @@ Compress LLM message prompts by removing middle messages — **without breaking 
 
 ```bash
 # Bun
-bun add ai-sdk-token-compression
+bun add token-compression-middleware
 
 # pnpm
-pnpm add ai-sdk-token-compression
+pnpm add token-compression-middleware
 
 # npm
-npm install ai-sdk-token-compression
+npm install token-compression-middleware
 
 # yarn
-yarn add ai-sdk-token-compression
+yarn add token-compression-middleware
 ```
 
 ## Usage
