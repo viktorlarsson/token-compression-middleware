@@ -60,6 +60,40 @@ export const tokenBasedCompressionMiddleware = (
 
         const compressedMiddle = [...middle];
 
+        for (let i = 0; i < middle.length; i++) {
+          const msg = middle[i];
+
+          if (
+            msg.role === "assistant" &&
+            Array.isArray(msg.content) &&
+            msg.content.some((part) => part.type === "tool-call")
+          ) {
+            const nextMsg = middle[i + 1];
+            const expectedToolIds = msg.content
+              .filter((part) => part.type === "tool-call")
+              .map((part) => part.toolCallId);
+
+            if (
+              nextMsg &&
+              nextMsg.role === "tool" &&
+              Array.isArray(nextMsg.content) &&
+              expectedToolIds.every((id) =>
+                nextMsg.content.some(
+                  (part) =>
+                    part.type === "tool-result" && part.toolCallId === id
+                )
+              )
+            ) {
+              compressedMiddle.push(msg, nextMsg);
+              i++;
+            } else {
+              continue;
+            }
+          } else {
+            compressedMiddle.push(msg);
+          }
+        }
+
         while (
           countTokens([...pinnedStart, ...compressedMiddle, ...pinnedEnd]) >
           maxInputTokens
