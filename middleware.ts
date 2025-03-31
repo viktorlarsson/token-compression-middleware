@@ -65,9 +65,8 @@ export const tokenBasedCompressionMiddleware = (
           compressedMiddle.splice(idxToRemove, 1);
         }
 
-        // Filter pinnedEnd: remove orphaned tool results
+        // Step 1: Track toolCallIds to preserve only valid tool results
         const preservedToolCallIds = new Set<string>();
-
         for (const msg of [...pinnedStart, ...compressedMiddle]) {
           if (msg.role === "assistant" && Array.isArray(msg.content)) {
             for (const part of msg.content) {
@@ -80,21 +79,85 @@ export const tokenBasedCompressionMiddleware = (
 
         const filteredPinnedEnd = pinnedEnd.filter((msg) => {
           if (msg.role === "tool" && Array.isArray(msg.content)) {
+            return msg.content.every((part) => {
+              return (
+                part.type !== "tool-result" ||
+                preservedToolCallIds.has(part.toolCallId)
+              );
+            });
+          }
+          return true;
+        });
+
+        // Step 2: Ensure every tool-call has a corresponding tool-result immediately after
+        const finalPrompt: LanguageModelV1Message[] = [];
+        const pendingToolCallIds: string[] = [];
+
+        for (let i = 0; i < pinnedStart.length; i++) {
+          finalPrompt.push(pinnedStart[i]);
+        }
+        for (let i = 0; i < compressedMiddle.length; i++) {
+          const msg = compressedMiddle[i];
+          finalPrompt.push(msg);
+
+          if (msg.role === "assistant" && Array.isArray(msg.content)) {
+            for (const part of msg.content) {
+              if (part.type === "tool-call") {
+                pendingToolCallIds.push(part.toolCallId);
+              }
+            }
+          }
+
+          if (msg.role === "tool" && Array.isArray(msg.content)) {
             for (const part of msg.content) {
               if (
                 part.type === "tool-result" &&
-                !preservedToolCallIds.has(part.toolCallId)
+                pendingToolCallIds.includes(part.toolCallId)
               ) {
-                return false; // orphaned result
+                pendingToolCallIds.splice(
+                  pendingToolCallIds.indexOf(part.toolCallId),
+                  1
+                );
               }
             }
+          }
+        }
+
+        for (let i = 0; i < filteredPinnedEnd.length; i++) {
+          finalPrompt.push(filteredPinnedEnd[i]);
+
+          const msg = filteredPinnedEnd[i];
+          if (msg.role === "tool" && Array.isArray(msg.content)) {
+            for (const part of msg.content) {
+              if (
+                part.type === "tool-result" &&
+                pendingToolCallIds.includes(part.toolCallId)
+              ) {
+                pendingToolCallIds.splice(
+                  pendingToolCallIds.indexOf(part.toolCallId),
+                  1
+                );
+              }
+            }
+          }
+        }
+
+        // Remove any assistant tool-calls that remain without a response
+        const cleanedPrompt = finalPrompt.filter((msg) => {
+          if (msg.role === "assistant" && Array.isArray(msg.content)) {
+            return msg.content.every((part) => {
+              return (
+                part.type !== "tool-call" ||
+                !pendingToolCallIds.includes(part.toolCallId)
+              );
+            });
           }
           return true;
         });
 
         return {
           ...params,
-          prompt: [...pinnedStart, ...compressedMiddle, ...filteredPinnedEnd],
+          prompt: cleanedPrompt,
         };
       }
 
