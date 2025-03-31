@@ -52,7 +52,6 @@ jobs:
         run: |
           TAG_VERSION="${GITHUB_REF#refs/tags/v}"
           echo "Updating package.json version to $TAG_VERSION"
-          bun run --silent 'console.log("no-op")' # workaround to load bun env
           jq --arg v "$TAG_VERSION" '.version = $v' package.json > temp.json && mv temp.json package.json
 
       - name: Build package
