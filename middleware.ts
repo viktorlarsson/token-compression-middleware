@@ -30,23 +30,19 @@ export const tokenBasedCompressionMiddleware = (
         typeof msg.content === "string"
           ? msg.content
           : JSON.stringify(msg.content);
-
       return total + (tokenCountFn?.(msg) ?? estimateTokenCount(content));
     }, 0);
 
   return {
-    transformParams: async (ctx) => {
-      const { params, type } = ctx;
-
+    middlewareVersion: "v1",
+    transformParams: async ({ type, params }) => {
       if (
         (type === "generate" || type === "stream") &&
         Array.isArray(params.prompt)
       ) {
         const messages = params.prompt as LanguageModelV1Message[];
 
-        if (countTokens(messages) <= maxInputTokens) {
-          return params;
-        }
+        if (countTokens(messages) <= maxInputTokens) return params;
 
         const pinnedStart = messages.slice(0, pinnedStartCount);
         const pinnedEnd = messages.slice(-pinnedEndCount);
@@ -69,8 +65,37 @@ export const tokenBasedCompressionMiddleware = (
           compressedMiddle.splice(idxToRemove, 1);
         }
 
-        const compressed = [...pinnedStart, ...compressedMiddle, ...pinnedEnd];
-        return { ...params, prompt: compressed };
+        // Filter pinnedEnd: remove orphaned tool results
+        const preservedToolCallIds = new Set<string>();
+
+        for (const msg of [...pinnedStart, ...compressedMiddle]) {
+          if (msg.role === "assistant" && Array.isArray(msg.content)) {
+            for (const part of msg.content) {
+              if (part.type === "tool-call") {
+                preservedToolCallIds.add(part.toolCallId);
+              }
+            }
+          }
+        }
+
+        const filteredPinnedEnd = pinnedEnd.filter((msg) => {
+          if (msg.role === "tool" && Array.isArray(msg.content)) {
+            for (const part of msg.content) {
+              if (
+                part.type === "tool-result" &&
+                !preservedToolCallIds.has(part.toolCallId)
+              ) {
+                return false; // orphaned result
+              }
+            }
+          }
+          return true;
+        });
+
+        return {
+          ...params,
+          prompt: [...pinnedStart, ...compressedMiddle, ...filteredPinnedEnd],
+        };
       }
 
       return params;

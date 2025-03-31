@@ -3,17 +3,17 @@
   "workspaces": {
     "": {
       "name": "token-compression-middleware",
-      "dependencies": {
-        "@ai-sdk/provider": "1.1.0",
-        "ai": "4.2.9",
-      },
       "devDependencies": {
+        "@ai-sdk/provider": "^1.1.0",
         "@types/bun": "latest",
+        "ai": "^4.2.9",
         "typescript": "^5.8.2",
         "vitest": "^3.1.1",
       },
       "peerDependencies": {
-        "typescript": "^5.8.2",
+        "@ai-sdk/provider": "^1.1.0",
+        "ai": "^4.2.0",
+        "typescript": ">=5.0.0",
       },
     },
   },
