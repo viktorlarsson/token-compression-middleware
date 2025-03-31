@@ -4,22 +4,15 @@
 
 ```mermaid
 flowchart TD
-A[Start transformParams] --> B{Type is generate or stream?}
-B -- No --> Z[Return params unchanged]
-B -- Yes --> C{Is params.prompt an array?}
-C -- No --> Z
-C -- Yes --> D[Count total tokens in prompt]
-D --> E{Tokens > maxInputTokens?}
-E -- No --> Z
-E -- Yes --> F[Split prompt into pinnedStart, middle, pinnedEnd]
-F --> G[Compute protectedIndexes from tool-call/result pairs]
-G --> H[Remove messages from middle unless protected]
-H --> I[Track toolCallIds in pinnedStart and middle]
-I --> J[Filter pinnedEnd to valid tool-results only]
-J --> K[Rebuild finalPrompt with start, middle, end]
-K --> L[Track pending toolCallIds]
-L --> M[Remove assistant tool-calls without tool-results]
-M --> N[Return transformed params with cleaned prompt]
+A[Start transformParams] --> B{Is prompt too long?}
+B -- No --> Z[Return prompt unchanged]
+B -- Yes --> C[Split into pinnedStart, middle, pinnedEnd]
+C --> D[Identify tool-call pairs to protect]
+D --> E[Remove unprotected messages from middle]
+E --> F[Filter pinnedEnd to valid tool-results]
+F --> G[Rebuild prompt]
+G --> H[Clean up unmatched tool-calls]
+H --> I[Return compressed prompt]
 ```
 
 When middle-out compression is enabled, Token Compression Middleware ensures the prompt fits within the model’s context window by trimming or removing messages from the middle, based on your total token requirement (input + output).
