@@ -51,7 +51,7 @@ For more accurate results, pass your own tokenizer:
 import { encoding_for_model } from "@dqbd/tiktoken";
 import { tokenBasedCompressionMiddleware } from "ai-sdk-token-compression";
 
-// You can use any supported model like 'gpt-3.5-turbo', 'gpt-4', 'gpt-4o'
+// You can use any supported model
 const encoder = encoding_for_model("gpt-4o");
 
 const middleware = tokenBasedCompressionMiddleware({
